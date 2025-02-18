@@ -15,7 +15,8 @@ with open('config.json', 'r') as config_file:
     if ( config['reply_message'] != '' ):
         reply_message = config['reply_message']  
 
-client = TelegramClient('anon', api_id, api_hash)
+session_name = input('Enter the session name (keep the same if you want to keep your account settings): ')
+client = TelegramClient(session_name, api_id, api_hash)
 
 @client.on(events.NewMessage())
 async def handler(event):
