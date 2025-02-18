@@ -14,6 +14,7 @@ with open('config.json', 'r') as config_file:
         channel = config['notification_channel'] 
     if ( config['reply_message'] != '' ):
         reply_message = config['reply_message']  
+    config_file.close()
 
 session_name = input('Enter the session name (keep the same if you want to keep your account settings): ')
 client = TelegramClient(session_name, api_id, api_hash)
