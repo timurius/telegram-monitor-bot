@@ -1,6 +1,6 @@
 import asyncio
 from telethon import events, TelegramClient
-from json import load
+from json import load, dump
 
 with open('config.json', 'r') as config_file:
     config = load(config_file)
@@ -17,6 +17,16 @@ with open('config.json', 'r') as config_file:
 
 session_name = input('Enter the session name (keep the same if you want to keep your account settings): ')
 client = TelegramClient(session_name, api_id, api_hash)
+
+@client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
+async def handler(event):
+    channel = event.message.peer_id.channel_id
+    await event.message.delete(revoke=True)
+    config['notification_channel'] = channel
+    with open('config.json', 'w') as config_file:
+        dump(config, config_file)
+        config_file.close()
+    print('Set notification channel as: %s'%(channel))
 
 @client.on(events.NewMessage())
 async def handler(event):
