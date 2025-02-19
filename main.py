@@ -2,6 +2,11 @@ import asyncio
 from telethon import events, TelegramClient
 from json import load, dump
 
+trigger_words = []
+chats_to_monitor = []
+channel = ''
+reply_message = ''
+
 with open('config.json', 'r') as config_file:
     config = load(config_file)
     api_id = config['api_id']
