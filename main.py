@@ -34,7 +34,7 @@ async def handler(event):
         config_file.close()
     print('Set notification channel as: %s'%(channel))
 
-@client.on(events.NewMessage())
+@client.on(events.NewMessage(chats=chats_to_monitor))
 async def handler(event):
     for trigger_word in trigger_words:
         if trigger_word in event.message.message:
