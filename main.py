@@ -7,6 +7,11 @@ chats_to_monitor = []
 channel = ''
 reply_message = ''
 
+async def save_config(data):
+    with open('config.json', 'w') as config_file:
+        dump(data, config_file)
+        config_file.close()
+
 with open('config.json', 'r') as config_file:
     config = load(config_file)
     api_id = config['api_id']
@@ -29,10 +34,21 @@ async def handler(event):
     channel = event.message.peer_id.channel_id
     await event.message.delete(revoke=True)
     config['notification_channel'] = channel
-    with open('config.json', 'w') as config_file:
-        dump(config, config_file)
-        config_file.close()
+    await save_config(config)
     print('Set notification channel as: %s'%(channel))
+
+@client.on(events.NewMessage(outgoing=True, pattern='!addchat'))
+async def handler(event):
+    ch_to_add = event.message.peer_id 
+    if hasattr(ch_to_add, 'channel_id'):
+        chats_to_monitor.append(ch_to_add.channel_id)
+    elif hasattr(ch_to_add, 'chat_id'):
+        chats_to_monitor.append(ch_to_add.chat_id)
+    else:
+        print('You can not add this type of chat to the list!') 
+    config['chats'].append(chats_to_monitor[-1])
+    await save_config(config)
+    print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(chats_to_monitor[-1], hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
 
 @client.on(events.NewMessage(chats=chats_to_monitor))
 async def handler(event):
