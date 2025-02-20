@@ -31,14 +31,15 @@ client = TelegramClient(session_name, api_id, api_hash)
 
 @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
 async def handler(event):
-    channel = event.message.peer_id.channel_id
     await event.message.delete(revoke=True)
+    channel = event.message.peer_id.channel_id
     config['notification_channel'] = channel
     await save_config(config)
     print('Set notification channel as: %s'%(channel))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!addchat'))
 async def handler(event):
+    await event.message.delete(revoke=True)
     ch_to_add = event.message.peer_id 
     if hasattr(ch_to_add, 'channel_id'):
         ch_id = ch_to_add.channel_id
@@ -53,6 +54,13 @@ async def handler(event):
     config['chats'].append(ch_id)
     await save_config(config)
     print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(ch_id, hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
+
+@client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    chats_to_monitor.clear()
+    config['chats'].clear()
+    await save_config(config)
 
 @client.on(events.NewMessage(chats=chats_to_monitor))
 async def handler(event):
