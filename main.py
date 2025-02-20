@@ -12,6 +12,15 @@ async def save_config(data):
         dump(data, config_file)
         config_file.close()
 
+def get_id(peer):
+    if hasattr(peer, 'channel_id'):
+        return peer.channel_id
+    elif hasattr(peer, 'chat_id'):
+        return peer.chat_id
+    else:
+        print('You can not add this type of chat to the list!') 
+        return
+
 with open('config.json', 'r') as config_file:
     config = load(config_file)
     config_file.close()
@@ -30,13 +39,8 @@ async def handler(event):
 async def handler(event):
     await event.message.delete(revoke=True)
     ch_to_add = event.message.peer_id 
-    if hasattr(ch_to_add, 'channel_id'):
-        ch_id = ch_to_add.channel_id
-    elif hasattr(ch_to_add, 'chat_id'):
-        ch_id = ch_to_add.chat_id
-    else:
-        print('You can not add this type of chat to the list!') 
-    if ch_id in chats_to_monitor:
+    ch_id = get_id(ch_to_add)
+    if ch_id in config['chats']:
         print('The chat is already in the list')
         return
     config['chats'].append(ch_id)
