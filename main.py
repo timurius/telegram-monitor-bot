@@ -44,7 +44,7 @@ async def handler(event):
         return
     config['chats'].append(ch_id)
     await save_config(config)
-    print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(ch_id, hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
+    print('{} added to chats list.'.format(ch_id))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!removechat'))
 async def handler(event):
