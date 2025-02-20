@@ -38,14 +38,21 @@ async def handler(event):
 @client.on(events.NewMessage(outgoing=True, pattern='!addchat'))
 async def handler(event):
     await event.message.delete(revoke=True)
-    ch_to_add = event.message.peer_id 
-    ch_id = get_id(ch_to_add)
+    ch_id = get_id(event.message.peer_id)
     if ch_id in config['chats']:
         print('The chat is already in the list')
         return
     config['chats'].append(ch_id)
     await save_config(config)
     print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(ch_id, hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
+
+@client.on(events.NewMessage(outgoing=True, pattern='!removechat'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    ch_id = get_id(event.message.peer_id)
+    if ch_id in config['chats']:
+        config['chats'].remove(ch_id)
+    await save_config(config)
 
 @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
 async def handler(event):
