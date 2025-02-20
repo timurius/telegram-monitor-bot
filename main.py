@@ -41,14 +41,18 @@ async def handler(event):
 async def handler(event):
     ch_to_add = event.message.peer_id 
     if hasattr(ch_to_add, 'channel_id'):
-        chats_to_monitor.append(ch_to_add.channel_id)
+        ch_id = ch_to_add.channel_id
     elif hasattr(ch_to_add, 'chat_id'):
-        chats_to_monitor.append(ch_to_add.chat_id)
+        ch_id = ch_to_add.chat_id
     else:
         print('You can not add this type of chat to the list!') 
-    config['chats'].append(chats_to_monitor[-1])
+    if ch_id in chats_to_monitor:
+        print('The chat is already in the list')
+        return
+    chats_to_monitor.append(ch_id)
+    config['chats'].append(ch_id)
     await save_config(config)
-    print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(chats_to_monitor[-1], hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
+    print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(ch_id, hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
 
 @client.on(events.NewMessage(chats=chats_to_monitor))
 async def handler(event):
