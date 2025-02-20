@@ -2,11 +2,6 @@ import asyncio
 from telethon import events, TelegramClient
 from json import load, dump
 
-trigger_words = []
-chats_to_monitor = []
-channel = ''
-reply_message = ''
-
 async def save_config(data):
     with open('config.json', 'w') as config_file:
         dump(data, config_file)
@@ -69,9 +64,9 @@ async def handler(event):
         ch_list += chat.title + '\n'
     await client.send_message(event.peer_id, ch_list)
 
-@client.on(events.NewMessage(chats=chats_to_monitor))
+@client.on(events.NewMessage(chats=config['chats']))
 async def handler(event):
-    for trigger_word in trigger_words:
+    for trigger_word in config['trigger_words']:
         if trigger_word in event.message.message:
             await client.send_message(event.message.from_id, config['reply_message'])
 
