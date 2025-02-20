@@ -65,13 +65,13 @@ async def handler(event):
         for ch_id in config['chats']:
             chat = await client.get_entity(ch_id)
             ch_list += chat.title + '\n'
-        await client.send_message(event.peer_id, ch_list)
+        await client.send_message(event.message.peer_id, ch_list)
 
-@client.on(events.NewMessage(chats=config['chats']))
-async def handler(event):
-    for trigger_word in config['trigger_words']:
-        if trigger_word in event.message.message:
-            await client.send_message(event.message.from_id, config['reply_message'])
+#@client.on(events.NewMessage(chats=config['chats']))
+#async def handler(event):
+#    for trigger_word in config['trigger_words']:
+#        if trigger_word in event.message.message:
+#            await client.send_message(event.message.from_id, 'hi') 
 
 @client.on(events.NewMessage(outgoing=True, pattern='!addtriggers'))
 async def handler(event):
@@ -79,6 +79,11 @@ async def handler(event):
     triggers_to_add = event.message.message[13:]
     config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(' ')))
     await save_config(config)
+
+@client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    await client.send_message(event.message.peer_id, ' '.join(config['trigger_words']))
 
 with client:
     client.run_until_disconnected()
