@@ -60,6 +60,15 @@ async def handler(event):
     config['chats'].clear()
     await save_config(config)
 
+@client.on(events.NewMessage(outgoing=True, pattern='!chats'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    ch_list = ''
+    for ch_id in config['chats']:
+        chat = await client.get_entity(ch_id)
+        ch_list += chat.title + '\n'
+    await client.send_message(event.peer_id, ch_list)
+
 @client.on(events.NewMessage(chats=chats_to_monitor))
 async def handler(event):
     for trigger_word in trigger_words:
