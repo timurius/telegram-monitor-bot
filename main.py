@@ -14,26 +14,15 @@ async def save_config(data):
 
 with open('config.json', 'r') as config_file:
     config = load(config_file)
-    api_id = config['api_id']
-    api_hash = config['api_hash']
-    if ( len(config['chats']) != 0 ):
-        chats_to_monitor = config['chats']
-    if ( len(config['trigger_words']) != 0 ):
-        trigger_words = config['trigger_words']
-    if ( config['notification_channel'] != '' ):
-        channel = config['notification_channel'] 
-    if ( config['reply_message'] != '' ):
-        reply_message = config['reply_message']  
     config_file.close()
 
 session_name = input('Enter the session name (keep the same if you want to keep your account settings): ')
-client = TelegramClient(session_name, api_id, api_hash)
+client = TelegramClient(session_name, config['api_id'], config['api_hash'])
 
 @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
 async def handler(event):
     await event.message.delete(revoke=True)
-    channel = event.message.peer_id.channel_id
-    config['notification_channel'] = channel
+    config['notification_channel'] = event.message.peer_id.channel_id
     await save_config(config)
     print('Set notification channel as: %s'%(channel))
 
@@ -50,7 +39,6 @@ async def handler(event):
     if ch_id in chats_to_monitor:
         print('The chat is already in the list')
         return
-    chats_to_monitor.append(ch_id)
     config['chats'].append(ch_id)
     await save_config(config)
     print('{} added to chats list. Is channel: {}, is group: {}, is user: {}'.format(ch_id, hasattr(ch_to_add, 'channel_id'), hasattr(ch_to_add, 'chat_id'), hasattr(ch_to_add, 'user_id')))
@@ -58,7 +46,6 @@ async def handler(event):
 @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
 async def handler(event):
     await event.message.delete(revoke=True)
-    chats_to_monitor.clear()
     config['chats'].clear()
     await save_config(config)
 
@@ -66,7 +53,7 @@ async def handler(event):
 async def handler(event):
     for trigger_word in trigger_words:
         if trigger_word in event.message.message:
-            await client.send_message(event.message.from_id, reply_text)
+            await client.send_message(event.message.from_id, config['reply_message'])
 
 with client:
     client.run_until_disconnected()
