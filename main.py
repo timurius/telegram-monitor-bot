@@ -85,6 +85,13 @@ async def handler(event):
     await event.message.delete(revoke=True)
     await client.send_message(event.message.peer_id, ' '.join(config['trigger_words']))
 
+@client.on(events.NewMessage(outgoing=True, pattern='!removetriggers'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    triggers_to_remove = event.message.message[len('!removetriggers '):].split(' ')
+    config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
+    await save_config(config)
+
 with client:
     client.run_until_disconnected()
 
