@@ -95,6 +95,12 @@ async def handler(event):
     config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
     await save_config(config)
 
+@client.on(events.NewMessage(outgoing=True, pattern='!cleartriggers'))
+async def handler(event):
+    await event.message.delete(revoke=True)
+    config['trigger_words'].clear()
+    await save_config(config)
+
 with client:
     client.run_until_disconnected()
 
