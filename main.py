@@ -83,7 +83,10 @@ async def handler(event):
 @client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
 async def handler(event):
     await event.message.delete(revoke=True)
-    await client.send_message(event.message.peer_id, ' '.join(config['trigger_words']))
+    if len(config['trigger_words']) == 0:
+        await client.send_message(event.peer_id, 'No triggers in the list yet')
+    else:
+        await client.send_message(event.message.peer_id, ' '.join(config['trigger_words']))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!removetriggers'))
 async def handler(event):
