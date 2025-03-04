@@ -13,7 +13,6 @@ def get_id(peer):
     elif hasattr(peer, 'chat_id'):
         return peer.chat_id
     else:
-        print('You can not add this type of chat to the list!') 
         return
 
 with open('config.json', 'r') as config_file:
@@ -49,12 +48,14 @@ async def handler(event):
     if ch_id in config['chats']:
         config['chats'].remove(ch_id)
     await save_config(config)
+    print('Removed chat: {}'.format(ch_id))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
 async def handler(event):
     await event.message.delete(revoke=True)
     config['chats'].clear()
     await save_config(config)
+    print('Cleared chats')
 
 @client.on(events.NewMessage(outgoing=True, pattern='!chats'))
 async def handler(event):
@@ -74,6 +75,7 @@ async def handler(event):
     triggers_to_add = event.message.message[13:].lower()
     config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
     await save_config(config)
+    print('Added triggers to list: {}'.format(triggers_to_add))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
 async def handler(event):
@@ -89,12 +91,14 @@ async def handler(event):
     triggers_to_remove = event.message.message[len('!removetriggers '):].split(' ')
     config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
     await save_config(config)
+    print('Removed triggers: {}'.format(triggers_to_remove))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!cleartriggers'))
 async def handler(event):
     await event.message.delete(revoke=True)
     config['trigger_words'].clear()
     await save_config(config)
+    print('Cleared triggers')
 
 @client.on(events.NewMessage(incoming=True, chats=config['chats']))
 async def handler(event):
