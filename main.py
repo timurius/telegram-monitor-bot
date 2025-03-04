@@ -71,7 +71,7 @@ async def handler(event):
 @client.on(events.NewMessage(outgoing=True, pattern='!addtriggers'))
 async def handler(event):
     await event.message.delete(revoke=True)
-    triggers_to_add = event.message.message[13:]
+    triggers_to_add = event.message.message[13:].lower()
     config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
     await save_config(config)
 
@@ -102,7 +102,7 @@ async def handler(event):
         checked_messages.remove(event.message.message) 
         return
     else:
-        if any(trigger in event.message.message for trigger in config['trigger_words']):
+        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']):
             checked_messages.append(event.message.message)
             await event.message.forward_to(config['notification_channel'])
         else:
