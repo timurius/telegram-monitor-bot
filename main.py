@@ -98,7 +98,8 @@ async def handler(event):
 
 @client.on(events.NewMessage(incoming=True, chats=config['chats']))
 async def handler(event):
-    if event.message.message in checked_messages:
+    if event.message.message in checked_messages: #for whatever reason if this check is not done bot will forward messages infinitly, so better keep it
+        checked_messages.remove(event.message.message) 
         return
     else:
         if any(trigger in event.message.message for trigger in config['trigger_words']):
@@ -109,4 +110,3 @@ async def handler(event):
 
 with client:
     client.run_until_disconnected()
-
