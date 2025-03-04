@@ -104,7 +104,11 @@ async def handler(event):
     else:
         if any(trigger in event.message.message.lower() for trigger in config['trigger_words']):
             checked_messages.append(event.message.message)
+            from_chat = await client.get_entity(event.message.peer_id)
+            message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
+            message_info = '**Сообщение из**: `{}`\n**Ссылка на сообщение**: {}'.format(from_chat.title, message_link) 
             await event.message.forward_to(config['notification_channel'])
+            await client.send_message(config['notification_channel'], message_info)
         else:
             return
 
