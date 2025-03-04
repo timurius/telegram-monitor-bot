@@ -106,7 +106,7 @@ async def handler(event):
         checked_messages.remove(event.message.message) 
         return
     else:
-        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']):
+        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0:
             checked_messages.append(event.message.message)
             from_chat = await client.get_entity(event.message.peer_id)
             message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
