@@ -28,7 +28,7 @@ async def handler(event):
     await event.message.delete(revoke=True)
     config['notification_channel'] = event.message.peer_id.channel_id
     await save_config(config)
-    print('Set notification channel as: %s'%(channel))
+    print('Set notification channel as: %s'%(config['notification_channel']))
 
 @client.on(events.NewMessage(outgoing=True, pattern='!addchat'))
 async def handler(event):
