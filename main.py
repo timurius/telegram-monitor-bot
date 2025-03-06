@@ -3,8 +3,8 @@ from telethon import events, TelegramClient
 from json import load, dump
 
 async def save_config(data):
-    with open('config.json', 'w') as config_file:
-        dump(data, config_file)
+    with open('config.json', 'w', encoding='utf-8') as config_file:
+        dump(data, config_file, ensure_ascii=False)
         config_file.close()
 
 def get_id(peer):
@@ -15,7 +15,7 @@ def get_id(peer):
     else:
         return
 
-with open('config.json', 'r') as config_file:
+with open('config.json', 'r', encoding='utf-8') as config_file:
     config = load(config_file)
     config_file.close()
 
