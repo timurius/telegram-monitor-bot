@@ -1,9 +1,8 @@
 {
-	"api_id": "",
-	"api_hash": "",
+	"api_id": "", 
+	"api_hash": "", 
 	"trigger_words": [], 
-	"notification_channel": "",
+	"notification_channel": 0, 
 	"chats": [], 
-	"reply_message": ""
+	"timezone": ""
 }
-
