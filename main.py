@@ -20,8 +20,7 @@ with open('config.json', 'r', encoding='utf-8') as config_file:
     config_file.close()
 
 checked_messages = []
-session_name = input('Enter the session name (keep the same if you want to keep your account settings): ')
-client = TelegramClient(session_name, config['api_id'], config['api_hash'])
+client = TelegramClient('client', config['api_id'], config['api_hash'])
 
 @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
 async def handler(event):
