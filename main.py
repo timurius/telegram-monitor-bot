@@ -109,11 +109,13 @@ async def handler(event):
             checked_messages.append(event.message.message)
             from_chat = await client.get_entity(event.message.peer_id)
             message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
-            message_info = '**Сообщение из**: `{}`\n**Ссылка на сообщение**: {}'.format(from_chat.title, message_link) 
+            from_user = await client.get_entity(event.message.from_id)
+            message_info = '**{}**\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(,from_chat.title, from_user.username, message_link) 
             await event.message.forward_to(config['notification_channel'])
             await client.send_message(config['notification_channel'], message_info)
         else:
             return
 
 with client:
+    print('Bot launched successfully') 
     client.run_until_disconnected()
