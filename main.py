@@ -17,6 +17,15 @@ def get_id(peer):
     else:
         return
 
+async def add_chat(chat_id, config):
+    if chat_id in config['chats']:
+        print('The chat is already in the list')
+        return
+    config['chats'].append(chat_id)
+    await save_config(config)
+    print('{} added to chats list.'.format(chat_id))
+
+
 def main():
     with open('config.json', 'r', encoding='utf-8') as config_file:
         config = load(config_file)
@@ -32,17 +41,21 @@ def main():
         await save_config(config)
         print('Set notification channel as: %s'%(config['notification_channel']))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!addchat'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!addchats'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        ch_id = get_id(event.message.peer_id)
-        if ch_id in config['chats']:
-            print('The chat is already in the list')
-            return
-        config['chats'].append(ch_id)
-        await save_config(config)
-        print('{} added to chats list.'.format(ch_id))
-    
+        chats_to_add = event.message.message[9:].lower().split(', ')
+        for chat_name in chats_to_add:
+            chat = await client.get_input_entity(chat_name)
+            chat_id = get_id(chat)
+            await add_chat(chat_id, config)
+
+    @client.on(events.NewMessage(outgoing=True, pattern='!addchat$'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        chat_id = get_id(event.message.peer_id)
+        await add_chat(chat_id, config)
+
     @client.on(events.NewMessage(outgoing=True, pattern='!removechat'))
     async def handler(event):
         await event.message.delete(revoke=True)
