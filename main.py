@@ -37,33 +37,45 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        config['notification_channel'] = event.message.peer_id.channel_id
-        await save_config(config)
-        print('Set notification channel as: %s'%(config['notification_channel']))
+        try:
+            config['notification_channel'] = event.message.peer_id.channel_id
+            await save_config(config)
+            print('Set notification channel as: %s'%(config['notification_channel']))
+        except:
+            print('Coldn\'t set notifications channel')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!addchats'))
     async def handler(event):
         await event.message.delete(revoke=True)
         chats_to_add = event.message.message[9:].lower().split(', ')
         for chat_name in chats_to_add:
-            chat = await client.get_input_entity(chat_name)
-            chat_id = get_id(chat)
-            await add_chat(chat_id, config)
+            try:
+                chat = await client.get_input_entity(chat_name)
+                chat_id = get_id(chat)
+                await add_chat(chat_id, config)
+            except:
+                print('Couldn\'t add chat: {}'.format(chat_name))
 
     @client.on(events.NewMessage(outgoing=True, pattern='!addchat$'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        chat_id = get_id(event.message.peer_id)
-        await add_chat(chat_id, config)
+        try:
+            chat_id = get_id(event.message.peer_id)
+            await add_chat(chat_id, config)
+        except:
+            print('Couldn\'t add chat to the list') 
 
     @client.on(events.NewMessage(outgoing=True, pattern='!removechat'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        ch_id = get_id(event.message.peer_id)
-        if ch_id in config['chats']:
-            config['chats'].remove(ch_id)
-        await save_config(config)
-        print('Removed chat: {}'.format(ch_id))
+        try:
+            ch_id = get_id(event.message.peer_id)
+            if ch_id in config['chats']:
+                config['chats'].remove(ch_id)
+            await save_config(config)
+            print('Removed chat: {}'.format(ch_id))
+        except:
+            print('Couldn\'t remove chat from the list')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
     async def handler(event):
@@ -80,8 +92,11 @@ def main():
             await client.send_message(event.peer_id, 'No chats in the list yet')
         else:
             for ch_id in config['chats']:
-                chat = await client.get_entity(ch_id)
-                ch_list += chat.title + '\n'
+                try:
+                    chat = await client.get_entity(ch_id)
+                    ch_list += chat.title + '\n'
+                except:
+                    ch_list = '__Couldn\'t get chat\'s name (id = {})'.format(ch_id)
             await client.send_message(event.message.peer_id, ch_list)
     
     @client.on(events.NewMessage(outgoing=True, pattern='!addtriggers'))
@@ -117,21 +132,29 @@ def main():
     
     @client.on(events.NewMessage(incoming=True, chats=config['chats']))
     async def handler(event):
-        if event.message.message in checked_messages: #for whatever reason if this check is not done bot will forward messages infinitly, so better keep it
-            checked_messages.remove(event.message.message) 
-            return
-        else:
-            if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0:
-                checked_messages.append(event.message.message)
-                time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
-                from_chat = await client.get_entity(event.message.peer_id)
+        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0:
+            checked_messages.append(event.message.message)
+            time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
+            try:
+                from_chat = (await client.get_entity(event.message.peer_id)).title
+            except:
+                from_chat = '__Couldn\'t get chat name__'
+            try:
                 message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
-                from_user = await client.get_entity(event.message.from_id)
-                message_info = '**{}**\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, from_chat.title, from_user.username, message_link) 
+            except:
+                message_link = '__Couldn\'t get message link__'
+            try:
+                from_user = (await client.get_entity(event.message.from_id)).username
+            except:
+                from_user = '__Couldn\t get username__'
+            message_info = '**{}**\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, from_chat, from_user, message_link) 
+            try:
                 await event.message.forward_to(config['notification_channel'])
-                await client.send_message(config['notification_channel'], message_info)
-            else:
-                return
+            except:
+                await client.send_message(config['notification_channel'], '__Couldn\'t forward message detected__')
+            await client.send_message(config['notification_channel'], message_info)
+        else:
+            return
     
     with client:
         print('Bot launched successfully') 
