@@ -132,28 +132,32 @@ def main():
     
     @client.on(events.NewMessage(incoming=True, chats=config['chats']))
     async def handler(event):
-        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel']:
-            print(event.message)
-            checked_messages.append(event.message.message)
-            time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
-            try:
-                message = event.message.message
-            except:
-                message = '__Couldn\'t get message content__'
-            try:
-                from_chat = (await client.get_entity(event.message.peer_id)).title
-            except:
-                from_chat = '__Couldn\'t get chat name__'
-            try:
-                message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
-            except:
-                message_link = '__Couldn\'t get message link__'
-            try:
-                from_user = (await client.get_entity(event.message.from_id)).username
-            except:
-                from_user = '__Couldn\t get username__'
-            message_info = '**{}**\n==========================\n**Сообщение**: {}\n==========================\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, message, from_chat, from_user, message_link) 
-            await client.send_message(config['notification_channel'], message_info)
+        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel']:
+            for trigger in config['trigger_words']:
+                if trigger in event.message.message:
+                    checked_messages.append(event.message.message)
+                    time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
+                    try:
+                        message = event.message.message
+                    except:
+                        message = '__Couldn\'t get message content__'
+                    try:
+                        from_chat = (await client.get_entity(event.message.peer_id)).title
+                    except:
+                        from_chat = '__Couldn\'t get chat name__'
+                    try:
+                        message_link = 'https://t.me/c/{}/{}'.format(get_id(event.message.peer_id), event.message.id)
+                    except:
+                        message_link = '__Couldn\'t get message link__'
+                    try:
+                        from_user = (await client.get_entity(event.message.from_id)).username
+                    except:
+                        from_user = '__Couldn\t get username__'
+                    message_info = '**{}**\n==========================\n**Сообщение**: {}\n==========================\n**Обнаруженное слово**: {}\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, message, trigger, from_chat, from_user, message_link) 
+                    await client.send_message(config['notification_channel'], message_info)
+                    break
+                else:
+                    continue
         else:
             return
     
