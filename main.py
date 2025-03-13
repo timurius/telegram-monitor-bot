@@ -130,9 +130,10 @@ def main():
         await save_config(config)
         print('Cleared triggers')
     
-    @client.on(events.NewMessage(incoming=True, chats=config['chats']))
+    @client.on(events.NewMessage(incoming=True))
     async def handler(event):
-        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel']:
+        from_chat_id = get_id(event.message.peer_id)
+        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel'] and from_chat_id in config['chats']:
             for trigger in config['trigger_words']:
                 if trigger in event.message.message:
                     checked_messages.append(event.message.message)
