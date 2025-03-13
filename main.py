@@ -136,6 +136,10 @@ def main():
             checked_messages.append(event.message.message)
             time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
             try:
+                message = event.message.message
+            except:
+                message = '__Couldn\'t get message content__'
+            try:
                 from_chat = (await client.get_entity(event.message.peer_id)).title
             except:
                 from_chat = '__Couldn\'t get chat name__'
@@ -147,11 +151,7 @@ def main():
                 from_user = (await client.get_entity(event.message.from_id)).username
             except:
                 from_user = '__Couldn\t get username__'
-            message_info = '**{}**\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, from_chat, from_user, message_link) 
-            try:
-                await event.message.forward_to(config['notification_channel'])
-            except:
-                await client.send_message(config['notification_channel'], '__Couldn\'t forward message detected__')
+            message_info = '**{}**\n==========================\n**Сообщение**: {}\n==========================\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, message, from_chat, from_user, message_link) 
             await client.send_message(config['notification_channel'], message_info)
         else:
             return
