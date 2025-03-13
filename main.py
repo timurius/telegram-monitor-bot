@@ -132,7 +132,8 @@ def main():
     
     @client.on(events.NewMessage(incoming=True, chats=config['chats']))
     async def handler(event):
-        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0:
+        if any(trigger in event.message.message.lower() for trigger in config['trigger_words']) and config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel']:
+            print(event.message)
             checked_messages.append(event.message.message)
             time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
             try:
