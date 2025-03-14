@@ -4,5 +4,6 @@
 	"trigger_words": [], 
 	"notification_channel": 0, 
 	"chats": [], 
-	"timezone": ""
+	"timezone": "",
+	"ban_list": ""
 }

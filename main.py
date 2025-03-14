@@ -14,10 +14,15 @@ def get_id(peer):
         return peer.channel_id
     elif hasattr(peer, 'chat_id'):
         return peer.chat_id
+    elif hasattr(peer, 'user_id'):
+        return peer.user_id
     else:
         return
 
 async def add_chat(chat_id, config):
+    if chat_id in config['chats']:
+        print('Chats is already in the list')
+        return
     config['chats'].append(chat_id)
     await save_config(config)
     print('{} added to chats list.'.format(chat_id))
@@ -26,6 +31,16 @@ async def remove_chat(chat_id, config):
     config['chats'].remove(chat_id)
     await save_config(config)
     print('{} removed from chats list.'.format(chat_id))
+
+async def ban(user_id, config):
+    config['ban_list'].append(user_id)
+    await save_config(config)
+    print('{} banned.'.format(user_id))
+
+async def unban(user_id, config):
+    config['ban_list'].remove(user_id)
+    await save_config(config)
+    print('{} unbanned.'.format(user_id))
 
 def main():
     with open('config.json', 'r', encoding='utf-8') as config_file:
@@ -63,7 +78,7 @@ def main():
             ch_id = get_id(event.message.peer_id)
             await add_chat(ch_id, config)
         except:
-            print('Couldn\'t add chat to the list') 
+            print('Couldn\'t add chat to the list: {}'.format(e)) 
 
     @client.on(events.NewMessage(outgoing=True, pattern='!removechat$'))
     async def handler(event):
@@ -127,7 +142,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!removetriggers'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_remove = event.message.message[len('!removetriggers '):].split(' ')
+        triggers_to_remove = event.message.message[17:].split(', ')
         config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
         await save_config(config)
         print('Removed triggers: {}'.format(triggers_to_remove))
@@ -139,12 +154,37 @@ def main():
         await save_config(config)
         print('Cleared triggers')
     
+    @client.on(events.NewMessage(outgoing=True, pattern='!ban'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        usr_to_ban = event.message.message[5:].split(', ')
+        for usr_name in usr_to_ban:
+            try:
+                usr = await client.get_input_entity(usr_name)
+                usr_id = get_id(usr)
+                await ban(usr_id, config)
+            except:
+                print('Couldn\'t ban user: {}'.format(usr_name))
+    
+    @client.on(events.NewMessage(outgoing=True, pattern='!unban'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        usr_to_unban = event.message.message[7:].split(', ')
+        for usr_name in usr_to_unban:
+            try:
+                usr = await client.get_input_entity(usr_name)
+                usr_id = get_id(usr)
+                await unban(usr_id, config)
+            except Exception as e:
+                print('Couldn\'t unban user: {}'.format(usr_name))
+                print(e)
+
     @client.on(events.NewMessage(incoming=True))
     async def handler(event):
         from_chat_id = get_id(event.message.peer_id)
-        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel'] and from_chat_id in config['chats']:
+        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel'] and from_chat_id in config['chats'] and get_id(event.message.from_id) not in config['ban_list']: 
             for trigger in config['trigger_words']:
-                if trigger in event.message.message:
+                if trigger in event.message.message.lower():
                     checked_messages.append(event.message.message)
                     time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
                     try:
