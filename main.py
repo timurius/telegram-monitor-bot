@@ -160,10 +160,10 @@ def main():
                     except:
                         message_link = '__Couldn\'t get message link__'
                     try:
-                        from_user = (await client.get_entity(event.message.from_id)).username
+                        from_user = '@' + (await client.get_entity(event.message.from_id)).username
                     except:
-                        from_user = '__Couldn\t get username__'
-                    message_info = '**{}**\n==========================\n**Сообщение**: {}\n==========================\n**Обнаруженное слово**: {}\n**Сообщение из**: `{}`\n**Отправитель**: @{}\n**Ссылка на сообщение**: {}'.format(time, message, trigger, from_chat, from_user, message_link) 
+                        from_user = '__Couldn\'t get username__'
+                    message_info = '**{}**\n==========================\n**Сообщение**: {}\n==========================\n**Обнаруженное слово**: {}\n**Сообщение из**: `{}`\n**Отправитель**: {}\n**Ссылка на сообщение**: {}'.format(time, message, trigger, from_chat, from_user, message_link) 
                     await client.send_message(config['notification_channel'], message_info)
                     break
                 else:
