@@ -18,19 +18,19 @@ def get_id(peer):
         return
 
 async def add_chat(chat_id, config):
-    if chat_id in config['chats']:
-        print('The chat is already in the list')
-        return
     config['chats'].append(chat_id)
     await save_config(config)
     print('{} added to chats list.'.format(chat_id))
 
+async def remove_chat(chat_id, config):
+    config['chats'].remove(chat_id)
+    await save_config(config)
+    print('{} removed from chats list.'.format(chat_id))
 
 def main():
     with open('config.json', 'r', encoding='utf-8') as config_file:
         config = load(config_file)
         config_file.close()
-    
     checked_messages = []
     client = TelegramClient('client', config['api_id'], config['api_hash'])
     
@@ -47,35 +47,44 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!addchats'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        chats_to_add = event.message.message[9:].lower().split(', ')
-        for chat_name in chats_to_add:
+        ch_to_add = event.message.message[9:].split(', ')
+        for ch_name in ch_to_add:
             try:
-                chat = await client.get_input_entity(chat_name)
-                chat_id = get_id(chat)
-                await add_chat(chat_id, config)
+                chat = await client.get_input_entity(ch_name)
+                ch_id = get_id(chat)
+                await add_chat(ch_id, config)
             except:
-                print('Couldn\'t add chat: {}'.format(chat_name))
+                print('Couldn\'t add chat: {}'.format(ch_name))
 
     @client.on(events.NewMessage(outgoing=True, pattern='!addchat$'))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
-            chat_id = get_id(event.message.peer_id)
-            await add_chat(chat_id, config)
+            ch_id = get_id(event.message.peer_id)
+            await add_chat(ch_id, config)
         except:
             print('Couldn\'t add chat to the list') 
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!removechat'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!removechat$'))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
             ch_id = get_id(event.message.peer_id)
-            if ch_id in config['chats']:
-                config['chats'].remove(ch_id)
-            await save_config(config)
-            print('Removed chat: {}'.format(ch_id))
+            await remove_chat(ch_id, config)
         except:
             print('Couldn\'t remove chat from the list')
+
+    @client.on(events.NewMessage(outgoing=True, pattern='!removechats'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        ch_to_remove = event.message.message[13:].split(', ')
+        for ch_name in ch_to_remove:
+            try:
+                chat = await client.get_input_entity(ch_name)
+                ch_id = get_id(chat)
+                await remove_chat(ch_id, config)
+            except:
+                print('Couldn\'t remove chat: {}'.format(ch_name))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
     async def handler(event):
