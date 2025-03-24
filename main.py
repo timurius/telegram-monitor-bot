@@ -175,9 +175,8 @@ def main():
                 usr = await client.get_input_entity(usr_name)
                 usr_id = get_id(usr)
                 await unban(usr_id, config)
-            except Exception as e:
+            except:
                 print('Couldn\'t unban user: {}'.format(usr_name))
-                print(e)
 
     @client.on(events.NewMessage(outgoing=True, pattern='!banlist'))
     async def handler(event):
