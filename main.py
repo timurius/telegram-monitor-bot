@@ -157,6 +157,11 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!ban( |$)'))
     async def handler(event):
         await event.message.delete(revoke=True)
+        if event.message.is_reply:
+            usr_id = get_id(event.message.reply_to.reply_from.from_id) 
+            if usr_id != None:
+                await ban(usr_id, config)
+            return
         usr_to_ban = event.message.message[5:].split(', ')
         for usr_name in usr_to_ban:
             try:
@@ -169,6 +174,11 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!unban'))
     async def handler(event):
         await event.message.delete(revoke=True)
+        if event.message.is_reply:
+            usr_id = get_id(event.message.reply_to.reply_from.from_id) 
+            if usr_id != None:
+                await unban(usr_id, config)
+            return
         usr_to_unban = event.message.message[7:].split(', ')
         for usr_name in usr_to_unban:
             try:
