@@ -154,7 +154,7 @@ def main():
         await save_config(config)
         print('Cleared triggers')
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!ban'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!ban( |$)'))
     async def handler(event):
         await event.message.delete(revoke=True)
         usr_to_ban = event.message.message[5:].split(', ')
@@ -178,6 +178,24 @@ def main():
             except Exception as e:
                 print('Couldn\'t unban user: {}'.format(usr_name))
                 print(e)
+
+    @client.on(events.NewMessage(outgoing=True, pattern='!banlist'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        if len(config['ban_list']) == 0:
+            await client.send_message(event.peer_id, 'No banned users yet')
+        else:
+            message = ''
+            for usr_id in config['ban_list']:
+                usr = await client.get_entity(usr_id)
+                if usr.username != None:
+                    usr_name = usr.username
+                elif usr.last_name != None:
+                    usr_name = usr.first_name + ' ' + usr.last_name 
+                else:
+                    usr_name = usr.first_name
+                message += usr_name + '\n'
+            await client.send_message(event.message.peer_id, message)
 
     @client.on(events.NewMessage(incoming=True))
     async def handler(event):
