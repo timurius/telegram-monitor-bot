@@ -229,7 +229,7 @@ def main():
             for usr_id in config['ban_list']:
                 usr = await client.get_entity(usr_id)
                 if usr.username != None:
-                    usr_name = usr.username
+                    usr_name = '@' + usr.username
                 elif usr.last_name != None:
                     usr_name = usr.first_name + ' ' + usr.last_name 
                 else:
