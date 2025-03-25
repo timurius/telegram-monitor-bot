@@ -153,6 +153,37 @@ def main():
         config['trigger_words'].clear()
         await save_config(config)
         print('Cleared triggers')
+
+    @client.on(events.NewMessage(outgoing=True, pattern='!addnegtriggers'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        triggers_to_add = event.message.message[16:].lower()
+        config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
+        await save_config(config)
+        print('Added negative triggers to list: {}'.format(triggers_to_add))
+
+    @client.on(events.NewMessage(outgoing=True, pattern='!negtriggers'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        if len(config['neg_trigger_words']) == 0:
+            await client.send_message(event.peer_id, 'No negative triggers in the list yet')
+        else:
+            await client.send_message(event.message.peer_id, ', '.join(config['neg_trigger_words']))
+    
+    @client.on(events.NewMessage(outgoing=True, pattern='!removenegtriggers'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        triggers_to_remove = event.message.message[19:].split(', ')
+        config['neg_trigger_words'] = list(set(config['neg_trigger_words']) - set(triggers_to_remove))
+        await save_config(config)
+        print('Removed negative triggers: {}'.format(triggers_to_remove))
+    
+    @client.on(events.NewMessage(outgoing=True, pattern='!clearnegtriggers'))
+    async def handler(event):
+        await event.message.delete(revoke=True)
+        config['neg_trigger_words'].clear()
+        await save_config(config)
+        print('Cleared negative triggers')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!ban( |$)'))
     async def handler(event):
@@ -209,7 +240,7 @@ def main():
     @client.on(events.NewMessage(incoming=True))
     async def handler(event):
         from_chat_id = get_id(event.message.peer_id)
-        if config['notification_channel'] != 0 and get_id(event.message.from_id) != config['notification_channel'] and from_chat_id in config['chats'] and get_id(event.message.from_id) not in config['ban_list']: 
+        if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']) and (not any(neg_trigger in event.message.message.lower() for neg_trigger in config['neg_trigger_words'])): 
             for trigger in config['trigger_words']:
                 if trigger in event.message.message.lower():
                     checked_messages.append(event.message.message)

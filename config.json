@@ -2,6 +2,7 @@
 	"api_id": "", 
 	"api_hash": "", 
 	"trigger_words": [], 
+	"neg_trigger_words": [],
 	"notification_channel": 0, 
 	"chats": [], 
 	"timezone": "",
