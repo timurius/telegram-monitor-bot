@@ -21,7 +21,7 @@ def get_id(peer):
 
 async def add_chat(chat_id, config):
     if chat_id in config['chats']:
-        print('Chats is already in the list')
+        print('Chats is already in the list.')
         return
     config['chats'].append(chat_id)
     await save_config(config)
@@ -55,9 +55,9 @@ def main():
         try:
             config['notification_channel'] = event.message.peer_id.channel_id
             await save_config(config)
-            print('Set notification channel as: %s'%(config['notification_channel']))
+            print('Set notification channel as: {}.'.format(config['notification_channel']))
         except:
-            print('Coldn\'t set notifications channel')
+            print('Coldn\'t set notifications channel.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!addchats'))
     async def handler(event):
@@ -69,7 +69,7 @@ def main():
                 ch_id = get_id(chat)
                 await add_chat(ch_id, config)
             except:
-                print('Couldn\'t add chat: {}'.format(ch_name))
+                print('Couldn\'t add chat: {}.'.format(ch_name))
 
     @client.on(events.NewMessage(outgoing=True, pattern='!addchat$'))
     async def handler(event):
@@ -78,7 +78,7 @@ def main():
             ch_id = get_id(event.message.peer_id)
             await add_chat(ch_id, config)
         except:
-            print('Couldn\'t add chat to the list: {}'.format(e)) 
+            print('Couldn\'t add chat to the list: {}.'.format(e)) 
 
     @client.on(events.NewMessage(outgoing=True, pattern='!removechat$'))
     async def handler(event):
@@ -87,7 +87,7 @@ def main():
             ch_id = get_id(event.message.peer_id)
             await remove_chat(ch_id, config)
         except:
-            print('Couldn\'t remove chat from the list')
+            print('Couldn\'t remove chat from the list.')
 
     @client.on(events.NewMessage(outgoing=True, pattern='!removechats'))
     async def handler(event):
@@ -99,14 +99,14 @@ def main():
                 ch_id = get_id(chat)
                 await remove_chat(ch_id, config)
             except:
-                print('Couldn\'t remove chat: {}'.format(ch_name))
+                print('Couldn\'t remove chat: {}.'.format(ch_name))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['chats'].clear()
         await save_config(config)
-        print('Cleared chats')
+        print('Cleared chats.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!chats'))
     async def handler(event):
@@ -129,7 +129,7 @@ def main():
         triggers_to_add = event.message.message[13:].lower()
         config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
         await save_config(config)
-        print('Added triggers to list: {}'.format(triggers_to_add))
+        print('Added triggers to list: {}.'.format(triggers_to_add))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
     async def handler(event):
@@ -145,14 +145,14 @@ def main():
         triggers_to_remove = event.message.message[17:].split(', ')
         config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
         await save_config(config)
-        print('Removed triggers: {}'.format(triggers_to_remove))
+        print('Removed triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!cleartriggers'))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['trigger_words'].clear()
         await save_config(config)
-        print('Cleared triggers')
+        print('Cleared triggers.')
 
     @client.on(events.NewMessage(outgoing=True, pattern='!addnegtriggers'))
     async def handler(event):
@@ -160,7 +160,7 @@ def main():
         triggers_to_add = event.message.message[16:].lower()
         config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
         await save_config(config)
-        print('Added negative triggers to list: {}'.format(triggers_to_add))
+        print('Added negative triggers to list: {}.'.format(triggers_to_add))
 
     @client.on(events.NewMessage(outgoing=True, pattern='!negtriggers'))
     async def handler(event):
@@ -176,14 +176,14 @@ def main():
         triggers_to_remove = event.message.message[19:].split(', ')
         config['neg_trigger_words'] = list(set(config['neg_trigger_words']) - set(triggers_to_remove))
         await save_config(config)
-        print('Removed negative triggers: {}'.format(triggers_to_remove))
+        print('Removed negative triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!clearnegtriggers'))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['neg_trigger_words'].clear()
         await save_config(config)
-        print('Cleared negative triggers')
+        print('Cleared negative triggers.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!ban( |$)'))
     async def handler(event):
@@ -192,6 +192,8 @@ def main():
             usr_id = get_id(event.message.reply_to.reply_from.from_id) 
             if usr_id != None:
                 await ban(usr_id, config)
+            else:
+                print('Couldn\'t ban user.')
             return
         usr_to_ban = event.message.message[5:].split(', ')
         for usr_name in usr_to_ban:
@@ -200,7 +202,7 @@ def main():
                 usr_id = get_id(usr)
                 await ban(usr_id, config)
             except:
-                print('Couldn\'t ban user: {}'.format(usr_name))
+                print('Couldn\'t ban user: {}.'.format(usr_name))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!unban'))
     async def handler(event):
@@ -217,7 +219,7 @@ def main():
                 usr_id = get_id(usr)
                 await unban(usr_id, config)
             except:
-                print('Couldn\'t unban user: {}'.format(usr_name))
+                print('Couldn\'t unban user: {}.'.format(usr_name))
 
     @client.on(events.NewMessage(outgoing=True, pattern='!banlist'))
     async def handler(event):
@@ -270,7 +272,7 @@ def main():
             return
     
     with client:
-        print('Bot launched successfully') 
+        print('Bot launched successfully.') 
         client.run_until_disconnected()
 
 if __name__ == '__main__':
