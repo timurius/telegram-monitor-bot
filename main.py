@@ -1,4 +1,5 @@
 import asyncio
+from re import compile as compilere
 from telethon import events, TelegramClient
 from json import load, dump
 from datetime import datetime
@@ -242,7 +243,11 @@ def main():
     @client.on(events.NewMessage(incoming=True))
     async def handler(event):
         from_chat_id = get_id(event.message.peer_id)
-        if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']) and (not any(neg_trigger in event.message.message.lower() for neg_trigger in config['neg_trigger_words'])): 
+        if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']):
+            for neg_trigger in config['neg_trigger_words']:
+                regex = compilere('\\b{}\\b'.format(neg_trigger))
+                if regex.search(event.message.message.lower()) != None:
+                    return
             for trigger in config['trigger_words']:
                 if trigger in event.message.message.lower():
                     checked_messages.append(event.message.message)
