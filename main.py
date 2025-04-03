@@ -129,9 +129,12 @@ def main():
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_add = event.message.message[13:]
-        config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
-        await save_config(config)
-        print('Added triggers to list: {}.'.format(triggers_to_add))
+        if triggers_to_add != '':
+            config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
+            await save_config(config)
+            print('Added triggers to list: {}.'.format(triggers_to_add))
+        else:
+            print('Can\'t add triggers: no triggers were specified')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
     async def handler(event):
@@ -160,9 +163,12 @@ def main():
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_add = event.message.message[16:]
-        config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
-        await save_config(config)
-        print('Added negative triggers to list: {}.'.format(triggers_to_add))
+        if triggers_to_add != '':
+            config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
+            await save_config(config)
+            print('Added negative triggers to list: {}.'.format(triggers_to_add))
+        else:
+            print('Can\'t add negative triggers: no negative triggers were specified')
 
     @client.on(events.NewMessage(outgoing=True, pattern='!negtriggers'))
     async def handler(event):
