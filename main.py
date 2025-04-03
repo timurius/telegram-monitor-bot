@@ -1,5 +1,6 @@
 import asyncio
 from re import compile as compilere
+from re import IGNORECASE as ignr
 from telethon import events, TelegramClient
 from json import load, dump
 from datetime import datetime
@@ -127,7 +128,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!addtriggers'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_add = event.message.message[13:].lower()
+        triggers_to_add = event.message.message[13:]
         config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
         await save_config(config)
         print('Added triggers to list: {}.'.format(triggers_to_add))
@@ -158,7 +159,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!addnegtriggers'))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_add = event.message.message[16:].lower()
+        triggers_to_add = event.message.message[16:]
         config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
         await save_config(config)
         print('Added negative triggers to list: {}.'.format(triggers_to_add))
@@ -245,11 +246,12 @@ def main():
         from_chat_id = get_id(event.message.peer_id)
         if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']):
             for neg_trigger in config['neg_trigger_words']:
-                regex = compilere('\\b{}\\b'.format(neg_trigger))
-                if regex.search(event.message.message.lower()) != None:
+                regex = compilere('\\b{}\\b'.format(neg_trigger), ignr)
+                if regex.search(event.message.message) != None:
                     return
             for trigger in config['trigger_words']:
-                if trigger in event.message.message.lower():
+                regex = compilere('{}'.format(trigger), ignr)
+                if regex.search(event.message.message) != None:
                     checked_messages.append(event.message.message)
                     time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
                     try:
