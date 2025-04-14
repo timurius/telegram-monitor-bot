@@ -252,7 +252,7 @@ def main():
         from_chat_id = get_id(event.message.peer_id)
         if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']):
             for neg_trigger in config['neg_trigger_words']:
-                regex = compilere('\\b{}\\b'.format(neg_trigger), ignr)
+                regex = compilere(r'\b{}\b'.format(neg_trigger), ignr)
                 if regex.search(event.message.message) != None:
                     return
             for trigger in config['trigger_words']:
