@@ -256,7 +256,11 @@ def main():
                 if regex.search(event.message.message) != None:
                     return
             for trigger in config['trigger_words']:
-                regex = compilere('{}'.format(trigger), ignr)
+                if trigger[:1] == '\\':
+                    regex_raw = r'\b{}\b'.format(trigger[1:])
+                else:
+                    regex_raw = trigger
+                regex = compilere(regex_raw, ignr)
                 if regex.search(event.message.message) != None:
                     checked_messages.append(event.message.message)
                     time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
