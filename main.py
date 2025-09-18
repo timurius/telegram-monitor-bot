@@ -5,6 +5,7 @@ from telethon import events, TelegramClient
 from json import load, dump
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from argparse import ArgumentParser
 
 async def save_config(data):
     with open('config.json', 'w', encoding='utf-8') as config_file:
@@ -45,7 +46,16 @@ async def unban(user_id, config):
     print('{} unbanned.'.format(user_id))
 
 def main():
-    with open('config.json', 'r', encoding='utf-8') as config_file:
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument('-c', '--config')
+    args = parser.parse_args()
+    
+    if args.config == None:
+        config = 'config.json'
+    else:
+        config = args.config
+
+    with open(config, 'r', encoding='utf-8') as config_file:
         config = load(config_file)
         config_file.close()
     checked_messages = []
