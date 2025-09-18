@@ -48,6 +48,7 @@ async def unban(user_id, config):
 def main():
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-c', '--config')
+    parser.add_argument('-s', '--session')
     args = parser.parse_args()
     
     if args.config == None:
@@ -59,7 +60,12 @@ def main():
         config = load(config_file)
         config_file.close()
     checked_messages = []
-    client = TelegramClient('client', config['api_id'], config['api_hash'])
+
+    if args.session == None:
+        session_name = 'client'
+    else:
+        session_name = args.session
+    client = TelegramClient(session_name, config['api_id'], config['api_hash'])
     
     @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
     async def handler(event):
