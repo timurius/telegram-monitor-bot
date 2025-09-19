@@ -62,12 +62,19 @@ def main():
     checked_messages = []
 
     if args.session == None:
-        session_name = 'client'
+        session_path = 'client'
     else:
-        session_name = args.session
-    client = TelegramClient(session_name, config['api_id'], config['api_hash'])
+        session_path = args.session
+    client = TelegramClient(session_path, config['api_id'], config['api_hash'])
+
+    last_backslash = compilere(r'\/\w').search(session_path)
+    if last_backslash:
+        session_name = session_path[last_backslash.start() + 1:]
+    else:
+        session_name = session_path
+    print('Session name:', session_name)
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!setnotifications'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
@@ -77,7 +84,7 @@ def main():
         except:
             print('Coldn\'t set notifications channel.')
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!addchats'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} addchats'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         ch_to_add = event.message.message[9:].split(', ')
@@ -89,7 +96,7 @@ def main():
             except:
                 print('Couldn\'t add chat: {}.'.format(ch_name))
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!addchat$'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} addchat$'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
@@ -98,7 +105,7 @@ def main():
         except:
             print('Couldn\'t add chat to the list: {}.'.format(e)) 
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!removechat$'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} removechat$'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
@@ -107,7 +114,7 @@ def main():
         except:
             print('Couldn\'t remove chat from the list.')
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!removechats'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} removechats'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         ch_to_remove = event.message.message[13:].split(', ')
@@ -119,14 +126,14 @@ def main():
             except:
                 print('Couldn\'t remove chat: {}.'.format(ch_name))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!clearchats'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} clearchats'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['chats'].clear()
         await save_config(config)
         print('Cleared chats.')
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!chats'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} chats'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         ch_list = ''
@@ -141,7 +148,7 @@ def main():
                     ch_list = '__Couldn\'t get chat\'s name (id = {})'.format(ch_id)
             await client.send_message(event.message.peer_id, ch_list)
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!addtriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} addtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_add = event.message.message[13:]
@@ -152,7 +159,7 @@ def main():
         else:
             print('Can\'t add triggers: no triggers were specified')
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!triggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} triggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         if len(config['trigger_words']) == 0:
@@ -160,7 +167,7 @@ def main():
         else:
             await client.send_message(event.message.peer_id, ', '.join(config['trigger_words']))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!removetriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} removetriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[17:].split(', ')
@@ -168,14 +175,14 @@ def main():
         await save_config(config)
         print('Removed triggers: {}.'.format(triggers_to_remove))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!cleartriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} cleartriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['trigger_words'].clear()
         await save_config(config)
         print('Cleared triggers.')
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!addnegtriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} addnegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_add = event.message.message[16:]
@@ -186,7 +193,7 @@ def main():
         else:
             print('Can\'t add negative triggers: no negative triggers were specified')
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!negtriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} negtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         if len(config['neg_trigger_words']) == 0:
@@ -194,7 +201,7 @@ def main():
         else:
             await client.send_message(event.message.peer_id, ', '.join(config['neg_trigger_words']))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!removenegtriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} removenegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[19:].split(', ')
@@ -202,14 +209,14 @@ def main():
         await save_config(config)
         print('Removed negative triggers: {}.'.format(triggers_to_remove))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!clearnegtriggers'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} clearnegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['neg_trigger_words'].clear()
         await save_config(config)
         print('Cleared negative triggers.')
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!ban( |$)'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} ban( |$)'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         if event.message.is_reply:
@@ -228,7 +235,7 @@ def main():
             except:
                 print('Couldn\'t ban user: {}.'.format(usr_name))
     
-    @client.on(events.NewMessage(outgoing=True, pattern='!unban'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} unban'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         if event.message.is_reply:
@@ -245,7 +252,7 @@ def main():
             except:
                 print('Couldn\'t unban user: {}.'.format(usr_name))
 
-    @client.on(events.NewMessage(outgoing=True, pattern='!banlist'))
+    @client.on(events.NewMessage(outgoing=True, pattern='!{} banlist'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         if len(config['ban_list']) == 0:
