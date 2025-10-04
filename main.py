@@ -7,8 +7,34 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from argparse import ArgumentParser
 
+
+parser = ArgumentParser(add_help=False)
+parser.add_argument('-c', '--config')
+parser.add_argument('-s', '--session')
+args = parser.parse_args()
+
+if args.config == None:
+    config_name = 'config.json'
+else:
+    config_name = args.config
+
+if args.session == None:
+    session_path = 'client'
+else:
+    session_path = args.session
+
+last_backslash = compilere(r'\/\w').search(session_path)
+if last_backslash:
+    session_name = session_path[last_backslash.start() + 1:]
+else:
+    session_name = session_path
+
+print('Session name:', session_name)
+print('Config file:', config_name)
+
 async def save_config(data):
-    with open('config.json', 'w', encoding='utf-8') as config_file:
+    global config_name
+    with open(config_name, 'w', encoding='utf-8') as config_file:
         dump(data, config_file, ensure_ascii=False)
         config_file.close()
 
@@ -46,33 +72,12 @@ async def unban(user_id, config):
     print('{} unbanned.'.format(user_id))
 
 def main():
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument('-c', '--config')
-    parser.add_argument('-s', '--session')
-    args = parser.parse_args()
-    
-    if args.config == None:
-        config = 'config.json'
-    else:
-        config = args.config
-
-    with open(config, 'r', encoding='utf-8') as config_file:
+    with open(config_name, 'r', encoding='utf-8') as config_file:
         config = load(config_file)
         config_file.close()
     checked_messages = []
 
-    if args.session == None:
-        session_path = 'client'
-    else:
-        session_path = args.session
     client = TelegramClient(session_path, config['api_id'], config['api_hash'])
-
-    last_backslash = compilere(r'\/\w').search(session_path)
-    if last_backslash:
-        session_name = session_path[last_backslash.start() + 1:]
-    else:
-        session_name = session_path
-    print('Session name:', session_name)
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
@@ -151,7 +156,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!{} addtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_add = event.message.message[13:]
+        triggers_to_add = event.message.message[len('!{} addtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
             await save_config(config)
@@ -170,7 +175,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!{} removetriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_remove = event.message.message[17:].split(', ')
+        triggers_to_remove = event.message.message[len('!{} removetriggers '.format(session_name)):].split(', ')
         config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
         await save_config(config)
         print('Removed triggers: {}.'.format(triggers_to_remove))
@@ -185,7 +190,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!{} addnegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_add = event.message.message[16:]
+        triggers_to_add = event.message.message[len('!{} addnegtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
             await save_config(config)
@@ -204,7 +209,7 @@ def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!{} removenegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
-        triggers_to_remove = event.message.message[19:].split(', ')
+        triggers_to_remove = event.message.message[len('!{} removenegtriggers '.format(session_name)):].split(', ')
         config['neg_trigger_words'] = list(set(config['neg_trigger_words']) - set(triggers_to_remove))
         await save_config(config)
         print('Removed negative triggers: {}.'.format(triggers_to_remove))
@@ -226,7 +231,7 @@ def main():
             else:
                 print('Couldn\'t ban user.')
             return
-        usr_to_ban = event.message.message[5:].split(', ')
+        usr_to_ban = event.message.message[len('!{} ban '.format(session_name)):].split(', ')
         for usr_name in usr_to_ban:
             try:
                 usr = await client.get_input_entity(usr_name)
@@ -243,7 +248,7 @@ def main():
             if usr_id != None:
                 await unban(usr_id, config)
             return
-        usr_to_unban = event.message.message[7:].split(', ')
+        usr_to_unban = event.message.message[len('!{} unban '.format(session_name)):].split(', ')
         for usr_name in usr_to_unban:
             try:
                 usr = await client.get_input_entity(usr_name)
