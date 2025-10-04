@@ -75,7 +75,6 @@ def main():
     with open(config_name, 'r', encoding='utf-8') as config_file:
         config = load(config_file)
         config_file.close()
-    checked_messages = []
 
     client = TelegramClient(session_path, config['api_id'], config['api_hash'])
     
@@ -280,9 +279,15 @@ def main():
         from_chat_id = get_id(event.message.peer_id)
         if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']):
             for neg_trigger in config['neg_trigger_words']:
-                regex = compilere(r'\b{}\b'.format(neg_trigger), ignr)
+                if neg_trigger[:1] == '\\':
+                    regex_raw = r'\b{}\b'.format(neg_trigger[1:])
+                else:
+                    regex_raw = neg_trigger 
+                regex = compilere(regex_raw, ignr)
+
                 if regex.search(event.message.message) != None:
                     return
+
             for trigger in config['trigger_words']:
                 if trigger[:1] == '\\':
                     regex_raw = r'\b{}\b'.format(trigger[1:])
@@ -290,7 +295,6 @@ def main():
                     regex_raw = trigger
                 regex = compilere(regex_raw, ignr)
                 if regex.search(event.message.message) != None:
-                    checked_messages.append(event.message.message)
                     time = datetime.now().astimezone(ZoneInfo(config["timezone"])).strftime('%d %b %Y, %H:%M')
                     try:
                         message = event.message.message
