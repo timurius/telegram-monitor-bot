@@ -6,7 +6,7 @@ from json import load, dump
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from argparse import ArgumentParser
-
+from time import sleep
 
 parser = ArgumentParser(add_help=False)
 parser.add_argument('-c', '--config')
@@ -37,6 +37,10 @@ else:
 
 print('Session name:', session_name)
 print('Config file:', config_path)
+
+async def wait_until(expression):
+    while expression == True:
+        sleep(0.1)
 
 async def save_json(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as file:
@@ -100,7 +104,7 @@ def main():
         cache_file.close()
 
     client = TelegramClient(session_path, config['api_id'], config['api_hash'])
-    
+        
     @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
@@ -342,6 +346,12 @@ def main():
                     continue
         else:
             return
+
+    if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']): 
+        if config['notification_channel'] == '':
+            await wait_until(lambda : config['notification_channel'] != '') 
+        else:
+            cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
     
     with client:
         print('Bot launched successfully.') 
