@@ -12,7 +12,12 @@ parser = ArgumentParser(add_help=False)
 parser.add_argument('-c', '--config')
 parser.add_argument('-s', '--session')
 parser.add_argument('-h', '--cache')
+parser.add_argument('-l', '--memory-limit')
 args = parser.parse_args()
+
+if args.memory_limit == None:
+    args.memory_limit = 50
+args.memory_limit = eval(args.memory_limit)
 
 if args.config == None:
     config_path = 'config.json'
@@ -94,7 +99,7 @@ async def prep():
     global cache
     await client.catch_up()
     try:
-        cache_file= open(cache_path, 'r', encoding='utf-8')
+        cache_file = open(cache_path, 'r', encoding='utf-8')
     except FileNotFoundError:
         cache_file = open(cache_path, 'w', encoding='utf-8')
         cache_file.write('{}')
@@ -102,19 +107,19 @@ async def prep():
         cache_file = open(cache_path, 'r', encoding='utf-8')
     finally:
         cache = load(cache_file)
-        if hasattr(cache, 'reviewed_messages') != True: 
-            cache['reviewed_messages'] = set()
-        else:
-            cache['reviewed_messages_old'] = set(cache['reviewed_messages_old']) 
-        if hasattr(cache, 'reviewed_messages_old') != True: 
-            cache['reviewed_messages_old'] = set()
+        if 'reviewed_messages' not in cache: 
+            cache['reviewed_messages'] = set() 
         else:
             cache['reviewed_messages'] = set(cache['reviewed_messages']) 
+        if 'reviewed_messages_old' not in cache: 
+            cache['reviewed_messages_old'] = set() 
+        else:
+            cache['reviewed_messages_old'] = set(cache['reviewed_messages_old']) 
         await save_json(cache_path, cache)
         cache_file.close()
 
     if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']) and config['notification_channel'] != 0: 
-        cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
+        cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=args.memory_limit)
         save_json(cache_path, cache)
 
 async def main():
@@ -126,7 +131,7 @@ async def main():
             await save_json(config_path, config)
             print('Set notification channel as: {}.'.format(config['notification_channel']))
             if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']): 
-                cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
+                cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=args.memory_limit)
                 save_json(cache_path, cache)
                 
         except:
@@ -321,7 +326,7 @@ async def main():
     @client.on(events.NewMessage(incoming=True))
     async def handler(event):
         from_chat_id = get_id(event.message.peer_id)
-        if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']):
+        if (config['notification_channel'] != 0) and (get_id(event.message.from_id) != config['notification_channel']) and (from_chat_id in config['chats']) and (get_id(event.message.from_id) not in config['ban_list']) and (event.message.message not in cache['reviewed_messages']) and (event.message.message not in cache['reviewed_messages_old']):
             for neg_trigger in config['neg_trigger_words']:
                 if neg_trigger[:1] == '\\':
                     regex_raw = r'\b{}\b'.format(neg_trigger[1:])
@@ -358,6 +363,11 @@ async def main():
                         from_user = '__Couldn\'t get username__'
                     message_info = '{}\n==========================\n**{}**\n**Обнаруженное слово**: {}\n**Сообщение из**: `{}`\n**Отправитель**: {}\n**Ссылка на сообщение**: {}'.format(message, time, trigger, from_chat, from_user, message_link) 
                     await client.send_message(config['notification_channel'], message_info)
+                    cache['reviewed_messages'].add(event.message.message)
+                    if len(cache['reviewed_messages']) >= args.memory_limit:
+                        cache['reviewed_messages_old'] = cache['reviewed_messages'].copy()
+                        cache['reviewed_messages'].clear()
+                    await save_json(cache_path, cache)
                     break
                 else:
                     continue
