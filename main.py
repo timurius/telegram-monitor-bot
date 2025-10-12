@@ -11,12 +11,13 @@ from argparse import ArgumentParser
 parser = ArgumentParser(add_help=False)
 parser.add_argument('-c', '--config')
 parser.add_argument('-s', '--session')
+parser.add_arguments('-h', '--cache')
 args = parser.parse_args()
 
 if args.config == None:
-    config_name = 'config.json'
+    config_path = 'config.json'
 else:
-    config_name = args.config
+    config_path = args.config
 
 if args.session == None:
     session_path = 'client'
@@ -29,14 +30,18 @@ if last_backslash:
 else:
     session_name = session_path
 
-print('Session name:', session_name)
-print('Config file:', config_name)
+if args.cache == None:
+    cache_path = session_name + '.json'
+else:
+    cache_path = args.cache
 
-async def save_config(data):
-    global config_name
-    with open(config_name, 'w', encoding='utf-8') as config_file:
-        dump(data, config_file, ensure_ascii=False)
-        config_file.close()
+print('Session name:', session_name)
+print('Config file:', config_path)
+
+async def save_json(file_path, data):
+    with open(file_path, 'w', encoding='utf-8') as file:
+        dump(data, file, ensure_ascii=False)
+        file.close()
 
 def get_id(peer):
     if hasattr(peer, 'channel_id'):
@@ -53,28 +58,46 @@ async def add_chat(chat_id, config):
         print('Chats is already in the list.')
         return
     config['chats'].append(chat_id)
-    await save_config(config)
+    await save_file(config_path, config)
     print('{} added to chats list.'.format(chat_id))
 
 async def remove_chat(chat_id, config):
     config['chats'].remove(chat_id)
-    await save_config(config)
+    await save_file(config_path, config)
     print('{} removed from chats list.'.format(chat_id))
 
 async def ban(user_id, config):
     config['ban_list'].append(user_id)
-    await save_config(config)
+    await save_file(config_path, config)
     print('{} banned.'.format(user_id))
 
 async def unban(user_id, config):
     config['ban_list'].remove(user_id)
-    await save_config(config)
+    await save_file(config_path, config)
     print('{} unbanned.'.format(user_id))
 
 def main():
-    with open(config_name, 'r', encoding='utf-8') as config_file:
+    with open(config_path, 'r', encoding='utf-8') as config_file:
         config = load(config_file)
         config_file.close()
+
+    try:
+        cache_file= open(cache_path, 'r', encoding='utf-8')
+    except FileNotFoundError:
+        cache_file = open(cache_path, 'w', encoding='utf-8')
+        cache_file.close()
+        cache_file = open(cache_path, 'r', encoding='utf-8')
+    finally:
+        cache = load(config_file)
+        if hasattr(cache, 'reviewed_messages') != True: 
+            cache['reviewed_messages'] = set()
+        else:
+            cache['reviewed_messages_old'] = set(cache['reviewed_messages_old']) 
+        if hasattr(cache, 'reviewed_messages_old') != True: 
+            cache['reviewed_messages_old'] = set()
+        else:
+            cache['reviewed_messages'] = set(cache['reviewed_messages']) 
+        cache_file.close()
 
     client = TelegramClient(session_path, config['api_id'], config['api_hash'])
     
@@ -83,7 +106,7 @@ def main():
         await event.message.delete(revoke=True)
         try:
             config['notification_channel'] = event.message.peer_id.channel_id
-            await save_config(config)
+            await save_file(config_path, config)
             print('Set notification channel as: {}.'.format(config['notification_channel']))
         except:
             print('Coldn\'t set notifications channel.')
@@ -134,7 +157,7 @@ def main():
     async def handler(event):
         await event.message.delete(revoke=True)
         config['chats'].clear()
-        await save_config(config)
+        await save_file(config_path, config)
         print('Cleared chats.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} chats'.format(session_name)))
@@ -158,7 +181,7 @@ def main():
         triggers_to_add = event.message.message[len('!{} addtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
-            await save_config(config)
+            await save_file(config_path, config)
             print('Added triggers to list: {}.'.format(triggers_to_add))
         else:
             print('Can\'t add triggers: no triggers were specified')
@@ -176,14 +199,14 @@ def main():
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[len('!{} removetriggers '.format(session_name)):].split(', ')
         config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
-        await save_config(config)
+        await save_file(config_path, config)
         print('Removed triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} cleartriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['trigger_words'].clear()
-        await save_config(config)
+        await save_file(config_path, config)
         print('Cleared triggers.')
 
     @client.on(events.NewMessage(outgoing=True, pattern='!{} addnegtriggers'.format(session_name)))
@@ -192,7 +215,7 @@ def main():
         triggers_to_add = event.message.message[len('!{} addnegtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
-            await save_config(config)
+            await save_file(config_path, config)
             print('Added negative triggers to list: {}.'.format(triggers_to_add))
         else:
             print('Can\'t add negative triggers: no negative triggers were specified')
@@ -210,14 +233,14 @@ def main():
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[len('!{} removenegtriggers '.format(session_name)):].split(', ')
         config['neg_trigger_words'] = list(set(config['neg_trigger_words']) - set(triggers_to_remove))
-        await save_config(config)
+        await save_file(config_path, config)
         print('Removed negative triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} clearnegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['neg_trigger_words'].clear()
-        await save_config(config)
+        await save_file(config_path, config)
         print('Cleared negative triggers.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} ban( |$)'.format(session_name)))
