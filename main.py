@@ -2,7 +2,7 @@ import asyncio
 from re import compile as compilere
 from re import IGNORECASE as ignr
 from telethon import events, TelegramClient
-from json import load, dump
+from json import load, dump, JSONEncoder
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from argparse import ArgumentParser
@@ -11,7 +11,7 @@ from time import sleep
 parser = ArgumentParser(add_help=False)
 parser.add_argument('-c', '--config')
 parser.add_argument('-s', '--session')
-parser.add_arguments('-h', '--cache')
+parser.add_argument('-h', '--cache')
 args = parser.parse_args()
 
 if args.config == None:
@@ -35,16 +35,26 @@ if args.cache == None:
 else:
     cache_path = args.cache
 
+cache = {}
+
 print('Session name:', session_name)
 print('Config file:', config_path)
 
-async def wait_until(expression):
-    while expression == True:
-        sleep(0.1)
+with open(config_path, 'r', encoding='utf-8') as config_file:
+    config = load(config_file)
+    config_file.close()
+
+client = TelegramClient(session_path, config['api_id'], config['api_hash'])
+
+class SetEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return JSONEncoder.default(self, obj)
 
 async def save_json(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as file:
-        dump(data, file, ensure_ascii=False)
+        dump(data, file, ensure_ascii=False, cls=SetEncoder)
         file.close()
 
 def get_id(peer):
@@ -62,37 +72,36 @@ async def add_chat(chat_id, config):
         print('Chats is already in the list.')
         return
     config['chats'].append(chat_id)
-    await save_file(config_path, config)
+    await save_json(config_path, config)
     print('{} added to chats list.'.format(chat_id))
 
 async def remove_chat(chat_id, config):
     config['chats'].remove(chat_id)
-    await save_file(config_path, config)
+    await save_json(config_path, config)
     print('{} removed from chats list.'.format(chat_id))
 
 async def ban(user_id, config):
     config['ban_list'].append(user_id)
-    await save_file(config_path, config)
+    await save_json(config_path, config)
     print('{} banned.'.format(user_id))
 
 async def unban(user_id, config):
     config['ban_list'].remove(user_id)
-    await save_file(config_path, config)
+    await save_json(config_path, config)
     print('{} unbanned.'.format(user_id))
 
-def main():
-    with open(config_path, 'r', encoding='utf-8') as config_file:
-        config = load(config_file)
-        config_file.close()
-
+async def prep():
+    global cache
+    await client.catch_up()
     try:
         cache_file= open(cache_path, 'r', encoding='utf-8')
     except FileNotFoundError:
         cache_file = open(cache_path, 'w', encoding='utf-8')
+        cache_file.write('{}')
         cache_file.close()
         cache_file = open(cache_path, 'r', encoding='utf-8')
     finally:
-        cache = load(config_file)
+        cache = load(cache_file)
         if hasattr(cache, 'reviewed_messages') != True: 
             cache['reviewed_messages'] = set()
         else:
@@ -101,17 +110,25 @@ def main():
             cache['reviewed_messages_old'] = set()
         else:
             cache['reviewed_messages'] = set(cache['reviewed_messages']) 
+        await save_json(cache_path, cache)
         cache_file.close()
 
-    client = TelegramClient(session_path, config['api_id'], config['api_hash'])
-        
+    if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']) and config['notification_channel'] != 0: 
+        cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
+        save_json(cache_path, cache)
+
+async def main():
     @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         try:
             config['notification_channel'] = event.message.peer_id.channel_id
-            await save_file(config_path, config)
+            await save_json(config_path, config)
             print('Set notification channel as: {}.'.format(config['notification_channel']))
+            if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']): 
+                cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
+                save_json(cache_path, cache)
+                
         except:
             print('Coldn\'t set notifications channel.')
     
@@ -161,7 +178,7 @@ def main():
     async def handler(event):
         await event.message.delete(revoke=True)
         config['chats'].clear()
-        await save_file(config_path, config)
+        await save_json(config_path, config)
         print('Cleared chats.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} chats'.format(session_name)))
@@ -185,7 +202,7 @@ def main():
         triggers_to_add = event.message.message[len('!{} addtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['trigger_words'] = list(set(config['trigger_words'] + triggers_to_add.split(', ')))
-            await save_file(config_path, config)
+            await save_json(config_path, config)
             print('Added triggers to list: {}.'.format(triggers_to_add))
         else:
             print('Can\'t add triggers: no triggers were specified')
@@ -203,14 +220,14 @@ def main():
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[len('!{} removetriggers '.format(session_name)):].split(', ')
         config['trigger_words'] = list(set(config['trigger_words']) - set(triggers_to_remove))
-        await save_file(config_path, config)
+        await save_json(config_path, config)
         print('Removed triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} cleartriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['trigger_words'].clear()
-        await save_file(config_path, config)
+        await save_json(config_path, config)
         print('Cleared triggers.')
 
     @client.on(events.NewMessage(outgoing=True, pattern='!{} addnegtriggers'.format(session_name)))
@@ -219,7 +236,7 @@ def main():
         triggers_to_add = event.message.message[len('!{} addnegtriggers '.format(session_name)):]
         if triggers_to_add != '':
             config['neg_trigger_words'] = list(set(config['neg_trigger_words'] + triggers_to_add.split(', ')))
-            await save_file(config_path, config)
+            await save_json(config_path, config)
             print('Added negative triggers to list: {}.'.format(triggers_to_add))
         else:
             print('Can\'t add negative triggers: no negative triggers were specified')
@@ -237,14 +254,14 @@ def main():
         await event.message.delete(revoke=True)
         triggers_to_remove = event.message.message[len('!{} removenegtriggers '.format(session_name)):].split(', ')
         config['neg_trigger_words'] = list(set(config['neg_trigger_words']) - set(triggers_to_remove))
-        await save_file(config_path, config)
+        await save_json(config_path, config)
         print('Removed negative triggers: {}.'.format(triggers_to_remove))
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} clearnegtriggers'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
         config['neg_trigger_words'].clear()
-        await save_file(config_path, config)
+        await save_json(config_path, config)
         print('Cleared negative triggers.')
     
     @client.on(events.NewMessage(outgoing=True, pattern='!{} ban( |$)'.format(session_name)))
@@ -347,15 +364,10 @@ def main():
         else:
             return
 
-    if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']): 
-        if config['notification_channel'] == '':
-            await wait_until(lambda : config['notification_channel'] != '') 
-        else:
-            cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=50)
-    
-    with client:
+    async with client:
         print('Bot launched successfully.') 
-        client.run_until_disconnected()
+        await client.run_until_disconnected()
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(prep())
+    asyncio.run(main())
