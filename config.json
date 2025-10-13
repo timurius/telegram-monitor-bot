@@ -6,5 +6,5 @@
 	"notification_channel": 0, 
 	"chats": [], 
 	"timezone": "",
-	"ban_list": ""
+	"ban_list": []
 }
