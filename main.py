@@ -17,7 +17,8 @@ args = parser.parse_args()
 
 if args.memory_limit == None:
     args.memory_limit = 50
-args.memory_limit = eval(args.memory_limit)
+else:
+    args.memory_limit = eval(args.memory_limit)
 
 if args.config == None:
     config_path = 'config.json'
