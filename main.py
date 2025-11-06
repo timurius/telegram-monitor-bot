@@ -97,6 +97,7 @@ async def unban(user_id, config):
     print('{} unbanned.'.format(user_id))
 
 async def prep():
+    global client
     global cache
     await client.catch_up()
     try:
@@ -124,6 +125,7 @@ async def prep():
         save_json(cache_path, cache)
 
 async def main():
+    global client
     @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
