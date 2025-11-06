@@ -1,7 +1,7 @@
 import asyncio
 from re import compile as compilere
 from re import IGNORECASE as ignr
-from telethon import events, TelegramClient
+from telethon import types, events, TelegramClient
 from json import load, dump, JSONEncoder
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -42,8 +42,6 @@ else:
     cache_path = args.cache
 
 cache = {}
-
-client = None
 
 print('Session name:', session_name)
 print('Config file:', config_path)
@@ -96,41 +94,13 @@ async def unban(user_id, config):
     await save_json(config_path, config)
     print('{} unbanned.'.format(user_id))
 
-async def prep():
+
+async def main():
     global client
     client = TelegramClient(session_path, config['api_id'], config['api_hash'])
 
     await client.catch_up()
-    try:
-        cache_file = open(cache_path, 'r', encoding='utf-8')
-    except FileNotFoundError:
-        cache_file = open(cache_path, 'w', encoding='utf-8')
-        cache_file.write('{}')
-        cache_file.close()
-        cache_file = open(cache_path, 'r', encoding='utf-8')
-    finally:
-        cache = load(cache_file)
-        if 'reviewed_messages' not in cache: 
-            cache['reviewed_messages'] = set() 
-        else:
-            cache['reviewed_messages'] = set(cache['reviewed_messages']) 
-        if 'reviewed_messages_old' not in cache: 
-            cache['reviewed_messages_old'] = set() 
-        else:
-            cache['reviewed_messages_old'] = set(cache['reviewed_messages_old']) 
-        await save_json(cache_path, cache)
-        cache_file.close()
 
-    if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']) and config['notification_channel'] != 0: 
-        notif_channel_messages = await client.get_messages(config['notification_channel'], limit=args.memory_limit)
-        for message in notif_channel_messages:
-            separation_pos = message.find('==========================')
-            if separation_pos != -1:
-                cache['reviewed_messages_old'].append(message[:separation_pos])
-        save_json(cache_path, cache)
-
-async def main():
-    global client
     @client.on(events.NewMessage(outgoing=True, pattern='!{} setnotifications'.format(session_name)))
     async def handler(event):
         await event.message.delete(revoke=True)
@@ -384,8 +354,36 @@ async def main():
 
     async with client:
         print('Bot launched successfully.') 
+
+        try:
+            cache_file = open(cache_path, 'r', encoding='utf-8')
+        except FileNotFoundError:
+            cache_file = open(cache_path, 'w', encoding='utf-8')
+            cache_file.write('{}')
+            cache_file.close()
+            cache_file = open(cache_path, 'r', encoding='utf-8')
+        finally:
+            cache = load(cache_file)
+            if 'reviewed_messages' not in cache: 
+                cache['reviewed_messages'] = set() 
+            else:
+                cache['reviewed_messages'] = set(cache['reviewed_messages']) 
+            if 'reviewed_messages_old' not in cache: 
+                cache['reviewed_messages_old'] = set() 
+            else:
+                cache['reviewed_messages_old'] = set(cache['reviewed_messages_old']) 
+            await save_json(cache_path, cache)
+            cache_file.close()
+
+        if len(cache['reviewed_messages']) == 0 and len(cache['reviewed_messages_old']) == 0 and config['notification_channel'] != 0: 
+            notif_channel_messages = await client.get_messages(types.PeerChannel(config['notification_channel']), limit=args.memory_limit)
+            for message in notif_channel_messages:
+                separation_pos = message.message.find('==========================')
+                if separation_pos != -1:
+                    cache['reviewed_messages_old'].add(message.message[:separation_pos - 1])
+            await save_json(cache_path, cache)
+
         await client.run_until_disconnected()
 
 if __name__ == '__main__':
-    asyncio.run(prep())
     asyncio.run(main())
