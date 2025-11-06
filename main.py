@@ -43,14 +43,14 @@ else:
 
 cache = {}
 
+client = None
+
 print('Session name:', session_name)
 print('Config file:', config_path)
 
 with open(config_path, 'r', encoding='utf-8') as config_file:
     config = load(config_file)
     config_file.close()
-
-client = TelegramClient(session_path, config['api_id'], config['api_hash'])
 
 class SetEncoder(JSONEncoder):
     def default(self, obj):
@@ -98,7 +98,8 @@ async def unban(user_id, config):
 
 async def prep():
     global client
-    global cache
+    client = TelegramClient(session_path, config['api_id'], config['api_hash'])
+
     await client.catch_up()
     try:
         cache_file = open(cache_path, 'r', encoding='utf-8')
@@ -121,7 +122,11 @@ async def prep():
         cache_file.close()
 
     if len(cache['reviewed_messages']) and len(cache['reviewed_messages_old']) and config['notification_channel'] != 0: 
-        cache['reviewed_messages_old'] = await client.get_messages(config['notification_channel'], limit=args.memory_limit)
+        notif_channel_messages = await client.get_messages(config['notification_channel'], limit=args.memory_limit)
+        for message in notif_channel_messages:
+            separation_pos = message.find('==========================')
+            if separation_pos != -1:
+                cache['reviewed_messages_old'].append(message[:separation_pos])
         save_json(cache_path, cache)
 
 async def main():
