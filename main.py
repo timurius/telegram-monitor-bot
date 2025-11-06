@@ -377,12 +377,12 @@ async def main():
 
         if len(cache['reviewed_messages']) == 0 and len(cache['reviewed_messages_old']) == 0 and config['notification_channel'] != 0: 
             notif_channel_messages = await client.get_messages(types.PeerChannel(config['notification_channel']), limit=args.memory_limit)
-            if len(notif_channel_messages) != 0:
-                for message in notif_channel_messages:
+            for message in notif_channel_messages:
+                if message != None:
                     separation_pos = message.message.find('==========================')
                     if separation_pos != -1:
                         cache['reviewed_messages_old'].add(message.message[:separation_pos - 1])
-                await save_json(cache_path, cache)
+            await save_json(cache_path, cache)
 
         await client.run_until_disconnected()
 
